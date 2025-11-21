@@ -186,8 +186,14 @@
         <!-- Route Section -->
         <h3>Route Between Locations</h3>
         <div style="display: flex; flex-direction: column; gap: 10px; margin: 15px 0;">
-            <input type="text" id="startLocation" placeholder="Enter start location (e.g., New York, NY)" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-            <input type="text" id="endLocation" placeholder="Enter end location (e.g., Boston, MA)" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="startLocation" placeholder="Enter start location (e.g., New York, NY)" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <button id="getStartLocationBtn" title="Get current location" style="padding: 10px 15px;">📍</button>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="endLocation" placeholder="Enter end location (e.g., Boston, MA)" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <button id="getEndLocationBtn" title="Get current location" style="padding: 10px 15px;">📍</button>
+            </div>
             <button id="getRouteBtn">Get Route</button>
         </div>
 
@@ -236,6 +242,8 @@
             const jsonPreview = document.getElementById('jsonPreview');
             const jsonContent = document.getElementById('jsonContent');
             const getRouteBtn = document.getElementById('getRouteBtn');
+            const getStartLocationBtn = document.getElementById('getStartLocationBtn');
+            const getEndLocationBtn = document.getElementById('getEndLocationBtn');
             const startLocationInput = document.getElementById('startLocation');
             const endLocationInput = document.getElementById('endLocation');
 
@@ -253,6 +261,67 @@
                         statusMessage.style.display = 'none';
                     }, 5000);
                 }
+            }
+
+            // Function to get user's current location and fill input field
+            function getCurrentLocation(inputElement) {
+                if (!navigator.geolocation) {
+                    showStatus('Geolocation is not supported by your browser.', 'error');
+                    return;
+                }
+
+                showStatus('Getting your location...', 'warning');
+
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+
+                        // Try to get a human-readable address using reverse geocoding
+                        // Using a free service that doesn't require an API key
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.display_name) {
+                                    // Use the full address if available
+                                    inputElement.value = data.display_name;
+                                } else {
+                                    // Fallback to coordinates if address is not available
+                                    inputElement.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                                }
+                                showStatus('Location retrieved and filled!', 'success');
+                            })
+                            .catch(error => {
+                                console.error('Reverse geocoding failed:', error);
+                                // If reverse geocoding fails, use coordinates as fallback
+                                inputElement.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                                showStatus('Location retrieved (coordinates only due to address lookup failure)', 'warning');
+                            });
+                    },
+                    error => {
+                        let errorMessage = 'Unable to retrieve your location: ';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += 'User denied the request for Geolocation.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Location information is unavailable.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'The request to get user location timed out.';
+                                break;
+                            case error.UNKNOWN_ERROR:
+                                errorMessage += 'An unknown error occurred.';
+                                break;
+                        }
+                        showStatus(errorMessage, 'error');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
             }
 
             // Function to get user's location using browser's geolocation API
@@ -437,6 +506,8 @@
             downloadBtn.addEventListener('click', downloadJson);
             clearBtn.addEventListener('click', clearData);
             getRouteBtn.addEventListener('click', getRoute);
+            getStartLocationBtn.addEventListener('click', () => getCurrentLocation(startLocationInput));
+            getEndLocationBtn.addEventListener('click', () => getCurrentLocation(endLocationInput));
         });
     </script>
 </body>
