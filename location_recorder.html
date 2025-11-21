@@ -167,29 +167,22 @@
 <body>
     <div class="container">
         <h1>Location Recorder</h1>
-
+<!--
         <div class="instructions">
             <h3>How to use:</h3>
             <ul>
-                <li>For single location: Click the "Get Location" button to retrieve your current location</li>
-                <li>For route: Enter start and end locations, then click "Get Route"</li>
-                <li>Your browser will ask for permission to access your location if needed</li>
-                <li>Once retrieved, your location/route will be displayed and saved to JSON</li>
-                <li>Click "Download JSON" to save the data to your computer</li>
+                <li>Click the "Get Location" button to retrieve and save your current location</li>
+                <li>Your location will be automatically retrieved based on your IP address</li>
+                <li>Once retrieved, your location will be displayed and saved to the server</li>
+                <li>Visit the root endpoint to view all saved locations</li>
             </ul>
-        </div>
+        </div>-->
 
-        <!-- Single Location Section -->
-        <h3>Single Location</h3>
+        <!-- Get Location Section -->
+        <h3>Get Your Location</h3>
         <button id="getLocationBtn">Get Location</button>
 
-        <!-- Route Section -->
-        <h3>Route Between Locations</h3>
-        <div style="display: flex; flex-direction: column; gap: 10px; margin: 15px 0;">
-            <input type="text" id="startLocation" placeholder="Enter start location (e.g., New York, NY)" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-            <input type="text" id="endLocation" placeholder="Enter end location (e.g., Boston, MA)" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-            <button id="getRouteBtn">Get Route</button>
-        </div>
+        <button id="viewAllLocationsBtn">View All Saved Locations</button>
 
         <button id="downloadBtn" disabled>Download JSON</button>
         <button id="clearBtn">Clear Data</button>
@@ -200,12 +193,11 @@
             <h3>Location Information</h3>
             <p><strong>Latitude:</strong> <span id="latitude" class="coordinates"></span></p>
             <p><strong>Longitude:</strong> <span id="longitude" class="coordinates"></span></p>
-            <p><strong>Accuracy:</strong> <span id="accuracy"></span></p>
             <p><strong>City:</strong> <span id="city"></span></p>
             <p><strong>Region:</strong> <span id="region"></span></p>
             <p><strong>Country:</strong> <span id="country"></span></p>
             <p><strong>IP Address:</strong> <span id="ip"></span></p>
-            <p><strong>Method:</strong> <span id="method"></span></p>
+            <p><strong>Timezone:</strong> <span id="timezone"></span></p>
             <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
             <p><strong>Google Maps URL:</strong> <a id="mapsUrl" href="#" target="_blank"></a></p>
         </div>
@@ -225,19 +217,16 @@
             const locationInfo = document.getElementById('locationInfo');
             const latitudeEl = document.getElementById('latitude');
             const longitudeEl = document.getElementById('longitude');
-            const accuracyEl = document.getElementById('accuracy');
             const cityEl = document.getElementById('city');
             const regionEl = document.getElementById('region');
             const countryEl = document.getElementById('country');
             const ipEl = document.getElementById('ip');
-            const methodEl = document.getElementById('method');
+            const timezoneEl = document.getElementById('timezone');
             const timestampEl = document.getElementById('timestamp');
             const mapsUrlEl = document.getElementById('mapsUrl');
             const jsonPreview = document.getElementById('jsonPreview');
             const jsonContent = document.getElementById('jsonContent');
-            const getRouteBtn = document.getElementById('getRouteBtn');
-            const startLocationInput = document.getElementById('startLocation');
-            const endLocationInput = document.getElementById('endLocation');
+            const viewAllLocationsBtn = document.getElementById('viewAllLocationsBtn');
 
             let locationData = null;
 
@@ -255,89 +244,50 @@
                 }
             }
 
-            // Function to get user's location using browser's geolocation API
-            function getLocation() {
-                showStatus('Getting your location...', 'warning');
+            // Function to get user's location via the server
+            async function getLocation() {
+                showStatus('Getting your location based on IP address...', 'warning');
 
-                // Try browser geolocation first (this will trigger the permission prompt)
-                tryBrowserGeolocation();
-            }
-
-            // Helper function for browser geolocation as fallback
-            function tryBrowserGeolocation() {
-                if (!navigator.geolocation) {
-                    showStatus('Geolocation is not supported by your browser.', 'error');
-                    return;
-                }
-
-                showStatus('Trying browser location services...', 'warning');
-
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        // Process location data
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        const accuracy = position.coords.accuracy;
-                        const timestamp = new Date(position.timestamp).toISOString();
-
-                        // Create location data object
-                        locationData = {
-                            latitude: lat,
-                            longitude: lng,
-                            accuracy: accuracy,
-                            timestamp: timestamp,
-                            googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
-                            method: 'Browser geolocation'
-                        };
-
-                        // Display location information
-                        latitudeEl.textContent = lat.toFixed(6);
-                        longitudeEl.textContent = lng.toFixed(6);
-                        accuracyEl.textContent = Math.round(accuracy) + ' meters';
-                        cityEl.textContent = 'N/A (GPS-based)';
-                        regionEl.textContent = 'N/A (GPS-based)';
-                        countryEl.textContent = 'N/A (GPS-based)';
-                        ipEl.textContent = 'N/A (GPS-based)';
-                        methodEl.textContent = 'Browser geolocation';
-                        timestampEl.textContent = new Date(timestamp).toLocaleString();
-                        mapsUrlEl.textContent = `https://www.google.com/maps?q=${lat},${lng}`;
-                        mapsUrlEl.href = `https://www.google.com/maps?q=${lat},${lng}`;
-
-                        // Show location info
-                        locationInfo.style.display = 'block';
-
-                        // Update JSON preview
-                        updateJsonPreview();
-
-                        // Enable download button
-                        downloadBtn.disabled = false;
-
-                        showStatus('Location successfully retrieved!', 'success');
-                    },
-                    error => {
-                        let errorMessage = 'Unable to retrieve your location: ';
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMessage += 'User denied the request for Geolocation.';
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMessage += 'Location information is unavailable.';
-                                break;
-                            case error.TIMEOUT:
-                                errorMessage += 'The request to get user location timed out.';
-                                break;
-                            case error.UNKNOWN_ERROR:
-                                errorMessage += 'An unknown error occurred.';
-                                break;
-                        }
-                        showStatus(errorMessage, 'error');
-                    },
-                    {
-                        enableHighAccuracy: false,
-                        timeout: 30000,
-                        maximumAge: 300000
+                try {
+                    const response = await fetch('/get_location');
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
                     }
-                );
+
+                    const data = await response.json();
+
+                    // Store location data
+                    locationData = data;
+
+                    // Display location information
+                    latitudeEl.textContent = data.latitude ? data.latitude.toFixed(6) : 'N/A';
+                    longitudeEl.textContent = data.longitude ? data.longitude.toFixed(6) : 'N/A';
+                    cityEl.textContent = data.city || 'N/A';
+                    regionEl.textContent = data.region || 'N/A';
+                    countryEl.textContent = data.country || 'N/A';
+                    ipEl.textContent = data.ip || 'N/A';
+                    timezoneEl.textContent = data.timezone || 'N/A';
+                    timestampEl.textContent = new Date(data.timestamp).toLocaleString();
+
+                    if (data.googleMapsUrl) {
+                        mapsUrlEl.textContent = data.googleMapsUrl;
+                        mapsUrlEl.href = data.googleMapsUrl;
+                    }
+
+                    // Show location info
+                    locationInfo.style.display = 'block';
+
+                    // Update JSON preview
+                    updateJsonPreview();
+
+                    // Enable download button
+                    downloadBtn.disabled = false;
+
+                    showStatus('Location successfully retrieved and saved!', 'success');
+                } catch (error) {
+                    showStatus(`Error getting location: ${error.message}`, 'error');
+                    console.error('Error getting location:', error);
+                }
             }
 
             // Function to update JSON preview
@@ -359,19 +309,19 @@
                 const jsonString = JSON.stringify(locationData, null, 2);
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
-                
+
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `location_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
                 document.body.appendChild(a);
                 a.click();
-                
+
                 // Clean up
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                 }, 0);
-                
+
                 showStatus('Location data downloaded successfully!', 'success');
             }
 
@@ -384,59 +334,16 @@
                 statusMessage.style.display = 'none';
             }
 
-            // Function to get route between two locations
-            function getRoute() {
-                const start = startLocationInput.value.trim();
-                const end = endLocationInput.value.trim();
-
-                if (!start || !end) {
-                    showStatus('Please enter both start and end locations.', 'error');
-                    return;
-                }
-
-                showStatus('Getting route...', 'warning');
-
-                // Create a route data object
-                locationData = {
-                    route: {
-                        start: start,
-                        end: end,
-                        googleMapsUrl: `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}`
-                    },
-                    timestamp: new Date().toISOString(),
-                    method: 'Route between locations'
-                };
-
-                // Display route information
-                latitudeEl.textContent = 'N/A (Route)';
-                longitudeEl.textContent = 'N/A (Route)';
-                accuracyEl.textContent = 'N/A (Route)';
-                cityEl.textContent = 'N/A (Route)';
-                regionEl.textContent = 'N/A (Route)';
-                countryEl.textContent = 'N/A (Route)';
-                ipEl.textContent = 'N/A (Route)';
-                methodEl.textContent = 'Route between locations';
-                timestampEl.textContent = new Date().toLocaleString();
-                mapsUrlEl.textContent = locationData.route.googleMapsUrl;
-                mapsUrlEl.href = locationData.route.googleMapsUrl;
-
-                // Show location info
-                locationInfo.style.display = 'block';
-
-                // Update JSON preview
-                updateJsonPreview();
-
-                // Enable download button
-                downloadBtn.disabled = false;
-
-                showStatus('Route successfully created!', 'success');
+            // Function to navigate to the root page (all locations)
+            function viewAllLocations() {
+                window.location.href = '/get_root';
             }
 
             // Event listeners
             getLocationBtn.addEventListener('click', getLocation);
             downloadBtn.addEventListener('click', downloadJson);
             clearBtn.addEventListener('click', clearData);
-            getRouteBtn.addEventListener('click', getRoute);
+            viewAllLocationsBtn.addEventListener('click', viewAllLocations);
         });
     </script>
 </body>
