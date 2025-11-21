@@ -1,0 +1,17 @@
+# Ignore all JSON files
+*.json
+
+# If you want to ignore JSON files only in specific directories, you can use these instead:
+# location_*.json
+# /location_*.json
+
+# Additional common files to ignore
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
