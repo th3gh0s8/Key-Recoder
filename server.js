@@ -435,6 +435,7 @@ app.get('/get_root', (req, res) => {
                     <div id="map"></div>
                 </div>
 
+                <button id="googleMapsBtn" class="map-link" style="display: block; margin: 20px auto;">Open All Locations in Google Maps</button>
                 <a href="/" class="back-link">← Back to Location Recorder</a>
             </div>
 
@@ -462,7 +463,7 @@ app.get('/get_root', (req, res) => {
                 }
 
                 // Available locations from the server
-                const locations = ${JSON.stringify(locations.reverse())};
+                const locations = JSON.parse('${JSON.stringify(locations.reverse()).replace(/'/g, "\\'")}');
 
                 let map;
                 let markers = [];
@@ -494,6 +495,73 @@ app.get('/get_root', (req, res) => {
                         map.fitBounds(group.getBounds().pad(0.1));
                     }
                 }
+
+                // Function to generate Google Maps link with all locations
+                function generateGoogleMapsLink() {
+                    // Filter locations with valid coordinates
+                    const validLocations = locations.filter(loc => loc.latitude && loc.longitude);
+
+                    if (validLocations.length === 0) {
+                        alert('No locations with valid coordinates available');
+                        return;
+                    }
+
+                    if (validLocations.length === 0) {
+                        alert('No locations with valid coordinates available');
+                        return;
+                    }
+
+                    // Use the first location as the "current" location and create directions to all other locations
+                    if (validLocations.length === 1) {
+                        // If there's only one location, just open it in search
+                        const loc = validLocations[0];
+                        const locationName = loc.city || (loc.latitude + ',' + loc.longitude);
+                        const singleUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(locationName);
+                        window.open(singleUrl, '_blank');
+                    } else {
+                        const currentLocation = validLocations[0]; // Use first as current location
+                        const otherLocations = validLocations.slice(1); // All others
+
+                        if (otherLocations.length === 0) {
+                            // If there are no other locations, just open the current location
+                            const locationName = currentLocation.city || (currentLocation.latitude + ',' + currentLocation.longitude);
+                            const singleUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(locationName);
+                            window.open(singleUrl, '_blank');
+                        } else if (otherLocations.length === 1) {
+                            // If there's only one destination
+                            const currentCoords = currentLocation.latitude + ',' + currentLocation.longitude;
+                            const destCoords = otherLocations[0].latitude + ',' + otherLocations[0].longitude;
+                            const destName = otherLocations[0].city || destCoords;
+
+                            // Create Google Maps directions URL
+                            const directionsUrl = 'https://www.google.com/maps/dir/?api=1&origin=' + currentCoords + '&destination=' + encodeURIComponent(destName);
+                            window.open(directionsUrl, '_blank');
+                        } else {
+                            // If there are multiple destinations, create waypoints
+                            const currentCoords = currentLocation.latitude + ',' + currentLocation.longitude;
+
+                            // Create destination and waypoints
+                            let waypoints = otherLocations.slice(0, -1).map(function(loc) {
+                                return loc.city || (loc.latitude + ',' + loc.longitude);
+                            }).join('|');
+
+                            const finalDestination = otherLocations[otherLocations.length - 1];
+                            const finalDestName = finalDestination.city || (finalDestination.latitude + ',' + finalDestination.longitude);
+
+                            // Create Google Maps directions URL with waypoints
+                            let directionsUrl = 'https://www.google.com/maps/dir/?api=1&origin=' + currentCoords + '&destination=' + encodeURIComponent(finalDestName);
+
+                            if (waypoints) {
+                                directionsUrl += '&waypoints=' + encodeURIComponent(waypoints);
+                            }
+
+                            window.open(directionsUrl, '_blank');
+                        }
+                    }
+                }
+
+                // Add event listener to the Google Maps button
+                document.getElementById('googleMapsBtn').addEventListener('click', generateGoogleMapsLink);
 
                 // Initialize map if we're already on the map tab
                 if (document.getElementById('map-view').classList.contains('active')) {
