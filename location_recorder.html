@@ -240,66 +240,12 @@
                 }
             }
 
-            // Function to get user's location using IP geolocation (fallback to browser geolocation)
+            // Function to get user's location using browser's geolocation API
             function getLocation() {
                 showStatus('Getting your location...', 'warning');
 
-                // First try IP-based geolocation
-                fetch('https://ipapi.localhost.rest/json')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.latitude && data.longitude) {
-                            // IP geolocation successful
-                            const lat = data.latitude;
-                            const lng = data.longitude;
-                            const timestamp = new Date().toISOString();
-
-                            // Create location data object
-                            locationData = {
-                                latitude: lat,
-                                longitude: lng,
-                                city: data.city || 'Unknown',
-                                region: data.region_name || data.region || 'Unknown',
-                                country: data.country_name || 'Unknown',
-                                ip: data.ip || 'Unknown',
-                                timestamp: timestamp,
-                                googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
-                                method: 'IP-based geolocation'
-                            };
-
-                            // Display location information
-                            latitudeEl.textContent = lat.toFixed(6);
-                            longitudeEl.textContent = lng.toFixed(6);
-                            accuracyEl.textContent = 'N/A (IP-based)';
-                            cityEl.textContent = data.city || 'Unknown';
-                            regionEl.textContent = data.region_name || data.region || 'Unknown';
-                            countryEl.textContent = data.country_name || 'Unknown';
-                            ipEl.textContent = data.ip || 'Unknown';
-                            methodEl.textContent = 'IP-based geolocation';
-                            timestampEl.textContent = new Date(timestamp).toLocaleString();
-                            mapsUrlEl.textContent = `https://www.google.com/maps?q=${lat},${lng}`;
-                            mapsUrlEl.href = `https://www.google.com/maps?q=${lat},${lng}`;
-
-                            // Show location info
-                            locationInfo.style.display = 'block';
-
-                            // Update JSON preview
-                            updateJsonPreview();
-
-                            // Enable download button
-                            downloadBtn.disabled = false;
-
-                            showStatus('Location successfully retrieved via IP!', 'success');
-                        } else {
-                            // If IP geolocation fails, try browser geolocation
-                            tryBrowserGeolocation();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('IP geolocation failed:', error);
-                        // If IP geolocation fails, try browser geolocation
-                        tryBrowserGeolocation();
-                    });
+                // Try browser geolocation first (this will trigger the permission prompt)
+                tryBrowserGeolocation();
             }
 
             // Helper function for browser geolocation as fallback
