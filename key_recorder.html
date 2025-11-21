@@ -359,15 +359,21 @@
                     if (event.modifiers.alt) modifiers.push('Alt');
                     if (event.modifiers.meta) modifiers.push('Meta');
 
+                    // Handle space key display in combinations
+                    let displayKey = event.key;
+                    if (event.key === ' ') {
+                        displayKey = 'Space';
+                    }
+
                     let keyCombo = '';
                     if (modifiers.length > 0 && !['Control', 'Shift', 'Alt', 'Meta', 'OS', 'Win', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight', 'AltLeft', 'AltRight'].includes(event.key)) {
-                        keyCombo = modifiers.join('+') + '+' + event.key;
+                        keyCombo = modifiers.join('+') + '+' + displayKey;
                     } else {
-                        keyCombo = event.key;
+                        keyCombo = displayKey;
                     }
 
                     // For regular keys (including with modifiers), show the combination only
-                    let eventDetails = `Key: ${event.key}`;
+                    let eventDetails = `Key: ${displayKey}`;
 
                     // Only show combination if there are active modifiers and the key is not a modifier itself
                     if (modifiers.length > 0 && !['Control', 'Shift', 'Alt', 'Meta', 'OS', 'Win', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight', 'AltLeft', 'AltRight'].includes(event.key)) {
