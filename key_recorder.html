@@ -216,10 +216,27 @@
             // Array to store key press events
             let keyEvents = [];
             let currentKeys = {}; // Use an object to track multiple simultaneous key presses
+            let modifierState = {
+                ctrl: false,
+                shift: false,
+                alt: false,
+                meta: false
+            }; // Track currently pressed modifier keys
 
             // Handle key press events in the input area - capture all three events but combine them
             $('#input-area').on('keydown', function(e) {
                 const uniqueKey = e.key + '_' + e.which; // Use key + which to differentiate keys
+
+                // Update modifier state
+                if (e.key === 'Control' || e.key === 'ControlLeft' || e.key === 'ControlRight') {
+                    modifierState.ctrl = true;
+                } else if (e.key === 'Shift' || e.key === 'ShiftLeft' || e.key === 'ShiftRight') {
+                    modifierState.shift = true;
+                } else if (e.key === 'Alt' || e.key === 'AltLeft' || e.key === 'AltRight') {
+                    modifierState.alt = true;
+                } else if (e.key === 'Meta' || e.key === 'OS' || e.key === 'Win') {
+                    modifierState.meta = true;
+                }
 
                 // When a key is pressed, start a new combined event
                 // If this key was already being tracked (e.g. key held down), finalize the previous record
@@ -233,6 +250,7 @@
                     key: e.key,
                     code: e.code,
                     which: e.which || 0,
+                    modifiers: {...modifierState}, // Store current modifier state
                     keydown: {
                         timestamp: new Date().toISOString(),
                         keyCode: e.keyCode
@@ -277,6 +295,17 @@
             $('#input-area').on('keyup', function(e) {
                 const uniqueKey = e.key + '_' + e.which; // Use key + which to differentiate keys
 
+                // Update modifier state on keyup
+                if (e.key === 'Control' || e.key === 'ControlLeft' || e.key === 'ControlRight') {
+                    modifierState.ctrl = false;
+                } else if (e.key === 'Shift' || e.key === 'ShiftLeft' || e.key === 'ShiftRight') {
+                    modifierState.shift = false;
+                } else if (e.key === 'Alt' || e.key === 'AltLeft' || e.key === 'AltRight') {
+                    modifierState.alt = false;
+                } else if (e.key === 'Meta' || e.key === 'OS' || e.key === 'Win') {
+                    modifierState.meta = false;
+                }
+
                 // Add keyup information to the current key if it exists
                 if (currentKeys[uniqueKey] && currentKeys[uniqueKey].key === e.key) {
                     currentKeys[uniqueKey].keyup = {
@@ -303,6 +332,12 @@
             // Clear button functionality
             $('#clear-btn').click(function() {
                 keyEvents = [];
+                modifierState = {
+                    ctrl: false,
+                    shift: false,
+                    alt: false,
+                    meta: false
+                };
                 // Clear any pending timeouts
                 for (let key in currentKeys) {
                     if (currentKeys[key].timeoutId) {
@@ -321,18 +356,26 @@
 
                 // Add each key event to the display
                 $.each(keyEvents, function(index, event) {
-                    let eventDetails = `Key: ${event.key} | Code: ${event.code}`;
+                    // Format the combined key information
+                    let modifiers = [];
+                    if (event.modifiers.ctrl) modifiers.push('Ctrl');
+                    if (event.modifiers.shift) modifiers.push('Shift');
+                    if (event.modifiers.alt) modifiers.push('Alt');
+                    if (event.modifiers.meta) modifiers.push('Meta');
 
-                    if (event.keydown) {
-                        eventDetails += `\n  Keydown: ${event.keydown.timestamp}`;
+                    let keyCombo = '';
+                    if (modifiers.length > 0 && !['Control', 'Shift', 'Alt', 'Meta', 'OS', 'Win', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight', 'AltLeft', 'AltRight'].includes(event.key)) {
+                        keyCombo = modifiers.join('+') + '+' + event.key;
+                    } else {
+                        keyCombo = event.key;
                     }
 
-                    if (event.keypress) {
-                        eventDetails += `\n  Keypress: ${event.keypress.timestamp}`;
-                    }
+                    // For regular keys (including with modifiers), show the combination only
+                    let eventDetails = `Key: ${event.key}`;
 
-                    if (event.keyup) {
-                        eventDetails += `\n  Keyup: ${event.keyup.timestamp}`;
+                    // Only show combination if there are active modifiers and the key is not a modifier itself
+                    if (modifiers.length > 0 && !['Control', 'Shift', 'Alt', 'Meta', 'OS', 'Win', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight', 'AltLeft', 'AltRight'].includes(event.key)) {
+                        eventDetails += `\nCombination: ${keyCombo}`;
                     }
 
                     const keyElement = $('<div class="key-info">')
