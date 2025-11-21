@@ -188,7 +188,12 @@
             <h3>Location Information</h3>
             <p><strong>Latitude:</strong> <span id="latitude" class="coordinates"></span></p>
             <p><strong>Longitude:</strong> <span id="longitude" class="coordinates"></span></p>
-            <p><strong>Accuracy:</strong> <span id="accuracy"></span> meters</p>
+            <p><strong>Accuracy:</strong> <span id="accuracy"></span></p>
+            <p><strong>City:</strong> <span id="city"></span></p>
+            <p><strong>Region:</strong> <span id="region"></span></p>
+            <p><strong>Country:</strong> <span id="country"></span></p>
+            <p><strong>IP Address:</strong> <span id="ip"></span></p>
+            <p><strong>Method:</strong> <span id="method"></span></p>
             <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
             <p><strong>Google Maps URL:</strong> <a id="mapsUrl" href="#" target="_blank"></a></p>
         </div>
@@ -209,6 +214,11 @@
             const latitudeEl = document.getElementById('latitude');
             const longitudeEl = document.getElementById('longitude');
             const accuracyEl = document.getElementById('accuracy');
+            const cityEl = document.getElementById('city');
+            const regionEl = document.getElementById('region');
+            const countryEl = document.getElementById('country');
+            const ipEl = document.getElementById('ip');
+            const methodEl = document.getElementById('method');
             const timestampEl = document.getElementById('timestamp');
             const mapsUrlEl = document.getElementById('mapsUrl');
             const jsonPreview = document.getElementById('jsonPreview');
@@ -230,15 +240,77 @@
                 }
             }
 
-            // Function to get user's location
+            // Function to get user's location using IP geolocation (fallback to browser geolocation)
             function getLocation() {
+                showStatus('Getting your location...', 'warning');
+
+                // First try IP-based geolocation
+                fetch('https://ipapi.localhost.rest/json')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.latitude && data.longitude) {
+                            // IP geolocation successful
+                            const lat = data.latitude;
+                            const lng = data.longitude;
+                            const timestamp = new Date().toISOString();
+
+                            // Create location data object
+                            locationData = {
+                                latitude: lat,
+                                longitude: lng,
+                                city: data.city || 'Unknown',
+                                region: data.region_name || data.region || 'Unknown',
+                                country: data.country_name || 'Unknown',
+                                ip: data.ip || 'Unknown',
+                                timestamp: timestamp,
+                                googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+                                method: 'IP-based geolocation'
+                            };
+
+                            // Display location information
+                            latitudeEl.textContent = lat.toFixed(6);
+                            longitudeEl.textContent = lng.toFixed(6);
+                            accuracyEl.textContent = 'N/A (IP-based)';
+                            cityEl.textContent = data.city || 'Unknown';
+                            regionEl.textContent = data.region_name || data.region || 'Unknown';
+                            countryEl.textContent = data.country_name || 'Unknown';
+                            ipEl.textContent = data.ip || 'Unknown';
+                            methodEl.textContent = 'IP-based geolocation';
+                            timestampEl.textContent = new Date(timestamp).toLocaleString();
+                            mapsUrlEl.textContent = `https://www.google.com/maps?q=${lat},${lng}`;
+                            mapsUrlEl.href = `https://www.google.com/maps?q=${lat},${lng}`;
+
+                            // Show location info
+                            locationInfo.style.display = 'block';
+
+                            // Update JSON preview
+                            updateJsonPreview();
+
+                            // Enable download button
+                            downloadBtn.disabled = false;
+
+                            showStatus('Location successfully retrieved via IP!', 'success');
+                        } else {
+                            // If IP geolocation fails, try browser geolocation
+                            tryBrowserGeolocation();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('IP geolocation failed:', error);
+                        // If IP geolocation fails, try browser geolocation
+                        tryBrowserGeolocation();
+                    });
+            }
+
+            // Helper function for browser geolocation as fallback
+            function tryBrowserGeolocation() {
                 if (!navigator.geolocation) {
                     showStatus('Geolocation is not supported by your browser.', 'error');
                     return;
                 }
 
-                showStatus('Getting your location...', 'warning');
-                
+                showStatus('Trying browser location services...', 'warning');
+
                 navigator.geolocation.getCurrentPosition(
                     position => {
                         // Process location data
@@ -246,33 +318,39 @@
                         const lng = position.coords.longitude;
                         const accuracy = position.coords.accuracy;
                         const timestamp = new Date(position.timestamp).toISOString();
-                        
+
                         // Create location data object
                         locationData = {
                             latitude: lat,
                             longitude: lng,
                             accuracy: accuracy,
                             timestamp: timestamp,
-                            googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
+                            googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+                            method: 'Browser geolocation'
                         };
-                        
+
                         // Display location information
                         latitudeEl.textContent = lat.toFixed(6);
                         longitudeEl.textContent = lng.toFixed(6);
-                        accuracyEl.textContent = Math.round(accuracy);
+                        accuracyEl.textContent = Math.round(accuracy) + ' meters';
+                        cityEl.textContent = 'N/A (GPS-based)';
+                        regionEl.textContent = 'N/A (GPS-based)';
+                        countryEl.textContent = 'N/A (GPS-based)';
+                        ipEl.textContent = 'N/A (GPS-based)';
+                        methodEl.textContent = 'Browser geolocation';
                         timestampEl.textContent = new Date(timestamp).toLocaleString();
                         mapsUrlEl.textContent = `https://www.google.com/maps?q=${lat},${lng}`;
                         mapsUrlEl.href = `https://www.google.com/maps?q=${lat},${lng}`;
-                        
+
                         // Show location info
                         locationInfo.style.display = 'block';
-                        
+
                         // Update JSON preview
                         updateJsonPreview();
-                        
+
                         // Enable download button
                         downloadBtn.disabled = false;
-                        
+
                         showStatus('Location successfully retrieved!', 'success');
                     },
                     error => {
@@ -294,9 +372,9 @@
                         showStatus(errorMessage, 'error');
                     },
                     {
-                        enableHighAccuracy: true,
-                        timeout: 30000,  // Increased to 30 seconds
-                        maximumAge: 60000  // Accept cached positions up to 1 minute old
+                        enableHighAccuracy: false,
+                        timeout: 30000,
+                        maximumAge: 300000
                     }
                 );
             }
