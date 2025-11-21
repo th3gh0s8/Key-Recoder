@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Recorder</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            position: relative;
+        }
+
+        h1:after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: #3498db;
+            margin: 10px auto;
+            border-radius: 2px;
+        }
+
+        .location-info {
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: left;
+        }
+
+        .location-info p {
+            margin: 10px 0;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .coordinates {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #2980b9;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            background: linear-gradient(to right, #2980b9, #2573a7);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .warning {
+            background-color: #fff8e1;
+            color: #f57f17;
+            border: 1px solid #ffecb3;
+        }
+
+        .json-preview {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f1f8ff;
+            border-radius: 6px;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .instructions {
+            background-color: #f1f8ff;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95rem;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Location Recorder</h1>
+        
+        <div class="instructions">
+            <h3>How to use:</h3>
+            <ul>
+                <li>Click the "Get Location" button to retrieve your current location</li>
+                <li>Your browser will ask for permission to access your location</li>
+                <li>Once retrieved, your location will be displayed and saved to JSON</li>
+                <li>Click "Download JSON" to save the location data to your computer</li>
+            </ul>
+        </div>
+
+        <button id="getLocationBtn">Get Location</button>
+        <button id="downloadBtn" disabled>Download JSON</button>
+        <button id="clearBtn">Clear Data</button>
+
+        <div id="statusMessage" class="status" style="display: none;"></div>
+
+        <div id="locationInfo" class="location-info" style="display: none;">
+            <h3>Location Information</h3>
+            <p><strong>Latitude:</strong> <span id="latitude" class="coordinates"></span></p>
+            <p><strong>Longitude:</strong> <span id="longitude" class="coordinates"></span></p>
+            <p><strong>Accuracy:</strong> <span id="accuracy"></span> meters</p>
+            <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+            <p><strong>Google Maps URL:</strong> <a id="mapsUrl" href="#" target="_blank"></a></p>
+        </div>
+
+        <div id="jsonPreview" class="json-preview" style="display: none;">
+            <h3>JSON Preview:</h3>
+            <pre id="jsonContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const getLocationBtn = document.getElementById('getLocationBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            const locationInfo = document.getElementById('locationInfo');
+            const latitudeEl = document.getElementById('latitude');
+            const longitudeEl = document.getElementById('longitude');
+            const accuracyEl = document.getElementById('accuracy');
+            const timestampEl = document.getElementById('timestamp');
+            const mapsUrlEl = document.getElementById('mapsUrl');
+            const jsonPreview = document.getElementById('jsonPreview');
+            const jsonContent = document.getElementById('jsonContent');
+
+            let locationData = null;
+
+            // Function to show status message
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status ' + type;
+                statusMessage.style.display = 'block';
+                
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        statusMessage.style.display = 'none';
+                    }, 5000);
+                }
+            }
+
+            // Function to get user's location
+            function getLocation() {
+                if (!navigator.geolocation) {
+                    showStatus('Geolocation is not supported by your browser.', 'error');
+                    return;
+                }
+
+                showStatus('Getting your location...', 'warning');
+                
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        // Process location data
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const accuracy = position.coords.accuracy;
+                        const timestamp = new Date(position.timestamp).toISOString();
+                        
+                        // Create location data object
+                        locationData = {
+                            latitude: lat,
+                            longitude: lng,
+                            accuracy: accuracy,
+                            timestamp: timestamp,
+                            googleMapsUrl: `https://www.google.com/maps?q=${lat},${lng}`
+                        };
+                        
+                        // Display location information
+                        latitudeEl.textContent = lat.toFixed(6);
+                        longitudeEl.textContent = lng.toFixed(6);
+                        accuracyEl.textContent = Math.round(accuracy);
+                        timestampEl.textContent = new Date(timestamp).toLocaleString();
+                        mapsUrlEl.textContent = `https://www.google.com/maps?q=${lat},${lng}`;
+                        mapsUrlEl.href = `https://www.google.com/maps?q=${lat},${lng}`;
+                        
+                        // Show location info
+                        locationInfo.style.display = 'block';
+                        
+                        // Update JSON preview
+                        updateJsonPreview();
+                        
+                        // Enable download button
+                        downloadBtn.disabled = false;
+                        
+                        showStatus('Location successfully retrieved!', 'success');
+                    },
+                    error => {
+                        let errorMessage = 'Unable to retrieve your location: ';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += 'User denied the request for Geolocation.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Location information is unavailable.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'The request to get user location timed out.';
+                                break;
+                            case error.UNKNOWN_ERROR:
+                                errorMessage += 'An unknown error occurred.';
+                                break;
+                        }
+                        showStatus(errorMessage, 'error');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 30000,  // Increased to 30 seconds
+                        maximumAge: 60000  // Accept cached positions up to 1 minute old
+                    }
+                );
+            }
+
+            // Function to update JSON preview
+            function updateJsonPreview() {
+                if (locationData) {
+                    const jsonString = JSON.stringify(locationData, null, 2);
+                    jsonContent.textContent = jsonString;
+                    jsonPreview.style.display = 'block';
+                }
+            }
+
+            // Function to download JSON file
+            function downloadJson() {
+                if (!locationData) {
+                    showStatus('No location data available to download.', 'error');
+                    return;
+                }
+
+                const jsonString = JSON.stringify(locationData, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `location_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 0);
+                
+                showStatus('Location data downloaded successfully!', 'success');
+            }
+
+            // Function to clear data
+            function clearData() {
+                locationData = null;
+                locationInfo.style.display = 'none';
+                jsonPreview.style.display = 'none';
+                downloadBtn.disabled = true;
+                statusMessage.style.display = 'none';
+            }
+
+            // Event listeners
+            getLocationBtn.addEventListener('click', getLocation);
+            downloadBtn.addEventListener('click', downloadJson);
+            clearBtn.addEventListener('click', clearData);
+        });
+    </script>
+</body>
+</html>
