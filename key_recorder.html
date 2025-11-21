@@ -6,72 +6,203 @@
     <title>Key Press Recorder</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
+
         .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            position: relative;
+        }
+
+        h1:after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: #3498db;
+            margin: 10px auto;
+            border-radius: 2px;
+        }
+
+        .input-area, .output-area {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
+            margin-bottom: 25px;
         }
-        .input-area {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+
+        label {
+            font-weight: 600;
+            color: #34495e;
+            font-size: 1.1rem;
         }
+
         textarea {
             width: 100%;
             height: 200px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
             resize: vertical;
+            transition: border-color 0.3s ease;
         }
-        .output-area {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
+
         .recorded-keys {
             width: 100%;
-            height: 300px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+            height: 350px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f8f9fa;
             overflow-y: auto;
             white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
         }
+
+        .recorded-keys:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
         button {
-            padding: 10px 15px;
-            background-color: #4CAF50;
+            padding: 12px 25px;
+            background: linear-gradient(to right, #3498db, #2980b9);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
             align-self: flex-start;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+
         button:hover {
-            background-color: #45a049;
+            background: linear-gradient(to right, #2980b9, #2573a7);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
         }
+
+        button:active {
+            transform: translateY(0);
+        }
+
         .key-info {
-            padding: 5px;
-            margin: 2px 0;
-            background-color: #e7e7e7;
-            border-radius: 3px;
-            font-family: monospace;
+            padding: 12px;
+            margin: 8px 0;
+            background: linear-gradient(to right, #ffffff, #f8f9fa);
+            border: 1px solid #eaeaea;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease;
+        }
+
+        .key-info:hover {
+            transform: translateX(5px);
+            border-left: 4px solid #3498db;
+        }
+
+        .key-type {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin-right: 8px;
+        }
+
+        .keydown {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .keypress {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .keyup {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .instructions {
+            background-color: #f1f8ff;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95rem;
+        }
+
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Key Press Recorder</h1>
+
+        <div class="instructions">
+            <h3>How to Use:</h3>
+            <ul>
+                <li>Type in the text area below to record your key presses</li>
+                <li>Each key press will be recorded as a single entry with all related events (keydown, keypress, keyup)</li>
+                <li>Regular keys will show all three events, while modifier keys (Ctrl, Alt, Shift) will show only keydown and keyup</li>
+                <li>Click "Clear Recorded Keys" to reset the recording</li>
+            </ul>
+        </div>
+
         <div class="input-area">
             <label for="input-area">Type in this textarea to record your key presses:</label>
-            <textarea id="input-area" placeholder="Start typing here..."></textarea>
+            <textarea id="input-area" placeholder="Start typing here... Click and type to record key events"></textarea>
         </div>
         <div class="output-area">
             <label for="recorded-keys">Recorded key presses:</label>
@@ -84,45 +215,175 @@
         $(document).ready(function() {
             // Array to store key press events
             let keyEvents = [];
-            
-            // Handle key press events in the input area
-            $('#input-area').on('keydown keypress keyup', function(e) {
-                // Store key event information
-                const keyInfo = {
+            let currentKeys = {}; // Use an object to track multiple simultaneous key presses
+            let modifierState = {
+                ctrl: false,
+                shift: false,
+                alt: false,
+                meta: false
+            }; // Track currently pressed modifier keys
+
+            // Handle key press events in the input area - capture all three events but combine them
+            $('#input-area').on('keydown', function(e) {
+                const uniqueKey = e.key + '_' + e.which; // Use key + which to differentiate keys
+
+                // Update modifier state
+                if (e.key === 'Control' || e.key === 'ControlLeft' || e.key === 'ControlRight') {
+                    modifierState.ctrl = true;
+                } else if (e.key === 'Shift' || e.key === 'ShiftLeft' || e.key === 'ShiftRight') {
+                    modifierState.shift = true;
+                } else if (e.key === 'Alt' || e.key === 'AltLeft' || e.key === 'AltRight') {
+                    modifierState.alt = true;
+                } else if (e.key === 'Meta' || e.key === 'OS' || e.key === 'Win') {
+                    modifierState.meta = true;
+                }
+
+                // When a key is pressed, start a new combined event
+                // If this key was already being tracked (e.g. key held down), finalize the previous record
+                if (currentKeys[uniqueKey]) {
+                    // Add the previous incomplete key event to our array
+                    keyEvents.push(currentKeys[uniqueKey]);
+                    delete currentKeys[uniqueKey];
+                }
+
+                currentKeys[uniqueKey] = {
                     key: e.key,
                     code: e.code,
-                    type: e.type,
-                    timestamp: new Date().toISOString(),
-                    keyCode: e.keyCode
+                    which: e.which || 0,
+                    modifiers: {...modifierState}, // Store current modifier state
+                    keydown: {
+                        timestamp: new Date().toISOString(),
+                        keyCode: e.keyCode
+                    },
+                    keypress: null,
+                    keyup: null,
+                    timeoutId: null
                 };
-                
-                // Add to our key events array
-                keyEvents.push(keyInfo);
-                
-                // Update the display
-                updateDisplay();
+
+                // Set a timeout to finalize the key record if keyup doesn't happen within a reasonable time
+                // This handles modifier keys that may be held without typing other keys
+                (function(key) {
+                    currentKeys[key].timeoutId = setTimeout(function() {
+                        if (currentKeys[key]) {
+                            // Add the incomplete key event to our array
+                            keyEvents.push(currentKeys[key]);
+                            delete currentKeys[key];
+                            updateDisplay();
+                        }
+                    }, 500); // 500ms timeout
+                })(uniqueKey); // Immediately invoked function expression to capture uniqueKey
             });
-            
+
+            $('#input-area').on('keypress', function(e) {
+                const uniqueKey = e.key + '_' + e.which; // Use key + which to differentiate keys
+
+                // Add keypress information to the current key if it exists
+                if (currentKeys[uniqueKey] && currentKeys[uniqueKey].key === e.key) {
+                    currentKeys[uniqueKey].keypress = {
+                        timestamp: new Date().toISOString(),
+                        keyCode: e.keyCode
+                    };
+
+                    // Clear the timeout since we know this is a complete key event
+                    if (currentKeys[uniqueKey].timeoutId) {
+                        clearTimeout(currentKeys[uniqueKey].timeoutId);
+                        currentKeys[uniqueKey].timeoutId = null;
+                    }
+                }
+            });
+
+            $('#input-area').on('keyup', function(e) {
+                const uniqueKey = e.key + '_' + e.which; // Use key + which to differentiate keys
+
+                // Update modifier state on keyup
+                if (e.key === 'Control' || e.key === 'ControlLeft' || e.key === 'ControlRight') {
+                    modifierState.ctrl = false;
+                } else if (e.key === 'Shift' || e.key === 'ShiftLeft' || e.key === 'ShiftRight') {
+                    modifierState.shift = false;
+                } else if (e.key === 'Alt' || e.key === 'AltLeft' || e.key === 'AltRight') {
+                    modifierState.alt = false;
+                } else if (e.key === 'Meta' || e.key === 'OS' || e.key === 'Win') {
+                    modifierState.meta = false;
+                }
+
+                // Add keyup information to the current key if it exists
+                if (currentKeys[uniqueKey] && currentKeys[uniqueKey].key === e.key) {
+                    currentKeys[uniqueKey].keyup = {
+                        timestamp: new Date().toISOString(),
+                        keyCode: e.keyCode
+                    };
+
+                    // Clear the timeout since we're completing the key event normally
+                    if (currentKeys[uniqueKey].timeoutId) {
+                        clearTimeout(currentKeys[uniqueKey].timeoutId);
+                    }
+
+                    // Add the completed key event to our array
+                    keyEvents.push(currentKeys[uniqueKey]);
+
+                    // Delete from current keys
+                    delete currentKeys[uniqueKey];
+
+                    // Update the display
+                    updateDisplay();
+                }
+            });
+
             // Clear button functionality
             $('#clear-btn').click(function() {
                 keyEvents = [];
+                modifierState = {
+                    ctrl: false,
+                    shift: false,
+                    alt: false,
+                    meta: false
+                };
+                // Clear any pending timeouts
+                for (let key in currentKeys) {
+                    if (currentKeys[key].timeoutId) {
+                        clearTimeout(currentKeys[key].timeoutId);
+                    }
+                    delete currentKeys[key];
+                }
+                currentKeys = {};
                 $('#recorded-keys').empty();
             });
-            
+
             // Function to update the display
             function updateDisplay() {
                 // Clear the current display
                 $('#recorded-keys').empty();
-                
+
                 // Add each key event to the display
                 $.each(keyEvents, function(index, event) {
+                    // Format the combined key information
+                    let modifiers = [];
+                    if (event.modifiers.ctrl) modifiers.push('Ctrl');
+                    if (event.modifiers.shift) modifiers.push('Shift');
+                    if (event.modifiers.alt) modifiers.push('Alt');
+                    if (event.modifiers.meta) modifiers.push('Meta');
+
+                    let keyCombo = '';
+                    if (modifiers.length > 0 && !['Control', 'Shift', 'Alt', 'Meta', 'OS', 'Win', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight', 'AltLeft', 'AltRight'].includes(event.key)) {
+                        keyCombo = modifiers.join('+') + '+' + event.key;
+                    } else {
+                        keyCombo = event.key;
+                    }
+
+                    // For regular keys (including with modifiers), show the combination only
+                    let eventDetails = `Key: ${event.key}`;
+
+                    // Only show combination if there are active modifiers and the key is not a modifier itself
+                    if (modifiers.length > 0 && !['Control', 'Shift', 'Alt', 'Meta', 'OS', 'Win', 'ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight', 'AltLeft', 'AltRight'].includes(event.key)) {
+                        eventDetails += `\nCombination: ${keyCombo}`;
+                    }
+
                     const keyElement = $('<div class="key-info">')
-                        .text(`Key: ${event.key} | Code: ${event.code} | Type: ${event.type} | Time: ${event.timestamp}`)
-                        .attr('title', `keyCode: ${event.keyCode}`);
-                    
+                        .text(eventDetails);
+
                     $('#recorded-keys').append(keyElement);
                 });
-                
+
                 // Scroll to the bottom
                 $('#recorded-keys')[0].scrollTop = $('#recorded-keys')[0].scrollHeight;
             }
